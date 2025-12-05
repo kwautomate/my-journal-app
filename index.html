@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Journal & Tasks</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#6366f1">
+    <meta name="description" content="Personal journal, tasks, and quotes app">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --surface-light: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border-radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-box {
+            background: var(--surface);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-box h1 { text-align: center; margin-bottom: 10px; font-size: 28px; }
+        .auth-box p { text-align: center; color: var(--text-muted); margin-bottom: 30px; }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 25px;
+            background: var(--background);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+            color: var(--text-muted);
+        }
+
+        .auth-tab.active { background: var(--primary); color: white; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--surface-light);
+            border-radius: 8px;
+            background: var(--background);
+            color: var(--text);
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus { outline: none; border-color: var(--primary); }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .app-container { display: none; min-height: 100vh; }
+
+        .header {
+            background: var(--surface);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--surface-light);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 { font-size: 20px; display: flex; align-items: center; gap: 10px; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .user-email { color: var(--text-muted); font-size: 14px; }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: var(--surface-light);
+            color: var(--text);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-logout:hover { background: var(--danger); }
+
+        .nav-tabs {
+            display: flex;
+            background: var(--surface);
+            padding: 0 24px;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 16px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover { color: var(--text); }
+        .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .main-content { max-width: 900px; margin: 0 auto; padding: 24px; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+
+        .add-new-bar { display: flex; gap: 12px; margin-bottom: 24px; }
+
+        .add-new-bar input, .add-new-bar textarea {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid var(--surface-light);
+            border-radius: var(--border-radius);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .add-new-bar input:focus, .add-new-bar textarea:focus { outline: none; border-color: var(--primary); }
+
+        .add-new-bar button {
+            padding: 14px 28px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .add-new-bar button:hover { background: var(--primary-dark); }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--surface-light);
+            transition: all 0.3s;
+        }
+
+        .card:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .card-title { font-size: 18px; font-weight: 600; }
+        .card-date { color: var(--text-muted); font-size: 12px; }
+        .card-content { color: var(--text-muted); line-height: 1.7; white-space: pre-wrap; }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--surface-light);
+        }
+
+        .card-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .btn-edit { background: var(--surface-light); color: var(--text); }
+        .btn-delete { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .btn-delete:hover { background: var(--danger); color: white; }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 16px 20px;
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            margin-bottom: 12px;
+            border: 1px solid var(--surface-light);
+        }
+
+        .todo-checkbox { width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); }
+        .todo-text { flex: 1; font-size: 16px; }
+        .todo-text.completed { text-decoration: line-through; color: var(--text-muted); }
+
+        .todo-priority { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .priority-high { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .priority-medium { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .priority-low { background: rgba(34, 197, 94, 0.1); color: var(--success); }
+
+        .quote-card { background: linear-gradient(135deg, var(--surface) 0%, var(--surface-light) 100%); border-left: 4px solid var(--primary); }
+        .quote-text { font-size: 20px; font-style: italic; line-height: 1.8; margin-bottom: 15px; }
+        .quote-author { color: var(--primary); font-weight: 600; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state h3 { margin-bottom: 10px; color: var(--text); }
+        .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 { margin-bottom: 20px; }
+
+        .modal textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 14px;
+            border: 2px solid var(--surface-light);
+            border-radius: 8px;
+            background: var(--background);
+            color: var(--text);
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        .modal textarea:focus { outline: none; border-color: var(--primary); }
+        .modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+        .modal-actions button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: var(--surface-light); color: var(--text); }
+        .btn-save { background: var(--primary); color: white; }
+
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 15px; text-align: center; }
+            .nav-tabs { padding: 0 16px; }
+            .nav-tab { padding: 12px 16px; font-size: 14px; }
+            .main-content { padding: 16px; }
+            .add-new-bar { flex-direction: column; }
+            .user-email { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container" id="authContainer">
+        <div class="auth-box">
+            <h1>📔 My Journal</h1>
+            <p>Your personal space for thoughts, tasks & inspiration</p>
+            
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+                <div class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
+            </div>
+
+            <div class="error-message" id="authError"></div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required placeholder="Your password">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+
+            <form id="signupForm" style="display: none;" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="signupPassword" required placeholder="Min 6 characters" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="signupConfirm" required placeholder="Confirm password">
+                </div>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer">
+        <header class="header">
+            <h1>📔 My Journal</h1>
+            <div class="user-info">
+                <span class="user-email" id="userEmail"></span>
+                <button class="btn-logout" onclick="handleLogout()">Logout</button>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <div class="nav-tab active" onclick="switchTab('journals')">📝 Journals</div>
+            <div class="nav-tab" onclick="switchTab('todos')">✅ Tasks</div>
+            <div class="nav-tab" onclick="switchTab('quotes')">💡 Quotes</div>
+        </nav>
+
+        <main class="main-content">
+            <section class="content-section active" id="journals-section">
+                <div class="add-new-bar">
+                    <textarea id="newJournalContent" placeholder="Write your thoughts here..." rows="3"></textarea>
+                    <button onclick="addJournal()">Add Entry</button>
+                </div>
+                <div id="journalsList" class="loading">Loading...</div>
+            </section>
+
+            <section class="content-section" id="todos-section">
+                <div class="add-new-bar">
+                    <input type="text" id="newTodoTask" placeholder="What needs to be done?">
+                    <select id="newTodoPriority" style="padding: 14px; background: var(--surface); color: var(--text); border: 2px solid var(--surface-light); border-radius: 12px;">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <button onclick="addTodo()">Add Task</button>
+                </div>
+                <div id="todosList" class="loading">Loading...</div>
+            </section>
+
+            <section class="content-section" id="quotes-section">
+                <div class="add-new-bar" style="flex-direction: column;">
+                    <textarea id="newQuoteText" placeholder="Enter an inspiring quote..." rows="2"></textarea>
+                    <div style="display: flex; gap: 12px; width: 100%;">
+                        <input type="text" id="newQuoteAuthor" placeholder="Author (optional)" style="flex: 1;">
+                        <button onclick="addQuote()">Add Quote</button>
+                    </div>
+                </div>
+                <div id="quotesList" class="loading">Loading...</div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <h2 id="modalTitle">Edit Entry</h2>
+            <textarea id="editContent"></textarea>
+            <input type="text" id="editAuthor" placeholder="Author" style="display: none; width: 100%; padding: 14px; border: 2px solid var(--surface-light); border-radius: 8px; background: var(--background); color: var(--text); margin-bottom: 20px;">
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-save" onclick="saveEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // ⚠️ REPLACE THESE WITH YOUR SUPABASE VALUES!
+        const SUPABASE_URL = 'sb_publishable_SqPK3k6SkmLeKoqDr1E3oA_KN0ftQzY';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbGpkcWdldm9yZHh5eHFueHJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5NTI1NDYsImV4cCI6MjA4MDUyODU0Nn0.K8NodXecU8AsnCULEcL0Gz_5-M5FdHLPD52l_14LdF0';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let editingItem = null;
+        let editingType = null;
+
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+            hideError();
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('authError');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        function hideError() { document.getElementById('authError').style.display = 'none'; }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            hideError();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) showError(error.message);
+            else { currentUser = data.user; showApp(); }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            hideError();
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirm = document.getElementById('signupConfirm').value;
+            if (password !== confirm) { showError('Passwords do not match!'); return; }
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) showError(error.message);
+            else {
+                const err = document.getElementById('authError');
+                err.textContent = 'Check your email to confirm your account!';
+                err.style.display = 'block';
+                err.style.background = 'rgba(34, 197, 94, 0.1)';
+                err.style.borderColor = '#22c55e';
+                err.style.color = '#22c55e';
+            }
+        }
+
+        async function handleLogout() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+        }
+
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) { currentUser = user; showApp(); }
+        }
+
+        function showApp() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            document.getElementById('userEmail').textContent = currentUser.email;
+            loadJournals(); loadTodos(); loadQuotes();
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`${tab}-section`).classList.add('active');
+        }
+
+        async function loadJournals() {
+            const { data, error } = await supabase.from('journals').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+            if (error) { console.error(error); return; }
+            const container = document.getElementById('journalsList');
+            if (data.length === 0) { container.innerHTML = '<div class="empty-state"><h3>No journal entries yet</h3><p>Start writing your thoughts above!</p></div>'; return; }
+            container.innerHTML = data.map(j => `
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">${j.title || 'Journal Entry'}</span>
+                        <span class="card-date">${new Date(j.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div class="card-content">${escapeHtml(j.content)}</div>
+                    <div class="card-actions">
+                        <button class="btn-edit" onclick="editJournal('${j.id}', \`${escapeForJs(j.content)}\`)">Edit</button>
+                        <button class="btn-delete" onclick="deleteJournal('${j.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addJournal() {
+            const content = document.getElementById('newJournalContent').value.trim();
+            if (!content) return;
+            const { error } = await supabase.from('journals').insert([{ user_id: currentUser.id, content, title: content.split('\n')[0].substring(0, 50) }]);
+            if (error) { alert('Error adding entry'); return; }
+            document.getElementById('newJournalContent').value = '';
+            loadJournals();
+        }
+
+        async function deleteJournal(id) {
+            if (!confirm('Delete this entry?')) return;
+            await supabase.from('journals').delete().eq('id', id);
+            loadJournals();
+        }
+
+        function editJournal(id, content) {
+            editingItem = id; editingType = 'journal';
+            document.getElementById('modalTitle').textContent = 'Edit Journal Entry';
+            document.getElementById('editContent').value = content;
+            document.getElementById('editAuthor').style.display = 'none';
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        async function loadTodos() {
+            const { data, error } = await supabase.from('todos').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+            if (error) { console.error(error); return; }
+            const container = document.getElementById('todosList');
+            if (data.length === 0) { container.innerHTML = '<div class="empty-state"><h3>No tasks yet</h3><p>Add your first task above!</p></div>'; return; }
+            container.innerHTML = data.map(t => `
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox" ${t.is_completed ? 'checked' : ''} onchange="toggleTodo('${t.id}', this.checked)">
+                    <span class="todo-text ${t.is_completed ? 'completed' : ''}">${escapeHtml(t.task)}</span>
+                    <span class="todo-priority priority-${t.priority}">${t.priority}</span>
+                    <button class="btn-delete" onclick="deleteTodo('${t.id}')" style="padding: 6px 12px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        async function addTodo() {
+            const task = document.getElementById('newTodoTask').value.trim();
+            const priority = document.getElementById('newTodoPriority').value;
+            if (!task) return;
+            const { error } = await supabase.from('todos').insert([{ user_id: currentUser.id, task, priority }]);
+            if (error) { alert('Error adding task'); return; }
+            document.getElementById('newTodoTask').value = '';
+            loadTodos();
+        }
+
+        async function toggleTodo(id, completed) {
+            await supabase.from('todos').update({ is_completed: completed }).eq('id', id);
+            loadTodos();
+        }
+
+        async function deleteTodo(id) {
+            await supabase.from('todos').delete().eq('id', id);
+            loadTodos();
+        }
+
+        async function loadQuotes() {
+            const { data, error } = await supabase.from('quotes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+            if (error) { console.error(error); return; }
+            const container = document.getElementById('quotesList');
+            if (data.length === 0) { container.innerHTML = '<div class="empty-state"><h3>No quotes saved yet</h3><p>Add inspiring quotes that resonate with you!</p></div>'; return; }
+            container.innerHTML = data.map(q => `
+                <div class="card quote-card">
+                    <div class="quote-text">"${escapeHtml(q.quote_text)}"</div>
+                    ${q.author ? `<div class="quote-author">— ${escapeHtml(q.author)}</div>` : ''}
+                    <div class="card-actions">
+                        <button class="btn-edit" onclick="editQuote('${q.id}', \`${escapeForJs(q.quote_text)}\`, \`${escapeForJs(q.author || '')}\`)">Edit</button>
+                        <button class="btn-delete" onclick="deleteQuote('${q.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addQuote() {
+            const quoteText = document.getElementById('newQuoteText').value.trim();
+            const author = document.getElementById('newQuoteAuthor').value.trim();
+            if (!quoteText) return;
+            const { error } = await supabase.from('quotes').insert([{ user_id: currentUser.id, quote_text: quoteText, author: author || null }]);
+            if (error) { alert('Error adding quote'); return; }
+            document.getElementById('newQuoteText').value = '';
+            document.getElementById('newQuoteAuthor').value = '';
+            loadQuotes();
+        }
+
+        async function deleteQuote(id) {
+            if (!confirm('Delete this quote?')) return;
+            await supabase.from('quotes').delete().eq('id', id);
+            loadQuotes();
+        }
+
+        function editQuote(id, text, author) {
+            editingItem = id; editingType = 'quote';
+            document.getElementById('modalTitle').textContent = 'Edit Quote';
+            document.getElementById('editContent').value = text;
+            document.getElementById('editAuthor').value = author;
+            document.getElementById('editAuthor').style.display = 'block';
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('active');
+            editingItem = null; editingType = null;
+        }
+
+        async function saveEdit() {
+            const content = document.getElementById('editContent').value.trim();
+            if (!content) return;
+            if (editingType === 'journal') {
+                await supabase.from('journals').update({ content, title: content.split('\n')[0].substring(0, 50), updated_at: new Date().toISOString() }).eq('id', editingItem);
+                loadJournals();
+            } else if (editingType === 'quote') {
+                const author = document.getElementById('editAuthor').value.trim();
+                await supabase.from('quotes').update({ quote_text: content, author: author || null }).eq('id', editingItem);
+                loadQuotes();
+            }
+            closeModal();
+        }
+
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        function escapeForJs(text) { if (!text) return ''; return text.replace(/`/g, '\\`').replace(/\$/g, '\\$'); }
+
+        document.getElementById('editModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+        checkAuth();
+    </script>
+</body>
+</html>
